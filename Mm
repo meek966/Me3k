@@ -1,0 +1,119 @@
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+import random
+
+# -----------------------------
+# CONFIGURATION
+# -----------------------------
+SELECTED_PAIR = "EURUSD"  # You can change this to "GBPUSD", "USDJPY", etc.
+
+# -----------------------------
+# FETCH SIGNALS FROM PLATFORMS
+# -----------------------------
+def get_tradingview_signal(pair):
+    # Dummy example – replace with actual fetch logic later if needed
+    signals = ["Buy", "Strong Buy", "Sell", "Strong Sell", "Neutral"]
+    return random.choice(signals)
+
+def get_investing_signal(pair):
+    signals = ["Buy", "Strong Buy", "Sell", "Strong Sell", "Neutral"]
+    return random.choice(signals)
+
+def get_fxstreet_signal(pair):
+    signals = ["Buy", "Strong Buy", "Sell", "Strong Sell", "Neutral"]
+    return random.choice(signals)
+
+def get_currencyheatwave_signal():
+    signals = ["Buy", "Strong Buy", "Sell", "Strong Sell", "Neutral"]
+    return random.choice(signals)
+
+def get_dailyfx_signal():
+    signals = ["Buy", "Strong Buy", "Sell", "Strong Sell", "Neutral"]
+    return random.choice(signals)
+
+def get_marketwatch_signal():
+    signals = ["Buy", "Strong Buy", "Sell", "Strong Sell", "Neutral"]
+    return random.choice(signals)
+
+# -----------------------------
+# CONSENSUS AND PRICE LOGIC
+# -----------------------------
+def get_price(pair):
+    try:
+        url = f"https://api.exchangerate.host/latest?base={pair[:3]}&symbols={pair[3:]}"
+        data = requests.get(url).json()
+        return list(data["rates"].values())[0]
+    except Exception:
+        return None
+
+def consensus(*signals):
+    buy_signals = sum(1 for s in signals if "buy" in s.lower())
+    sell_signals = sum(1 for s in signals if "sell" in s.lower())
+    total = len(signals)
+    confidence = round(abs(buy_signals - sell_signals) / total * 100, 2)
+    
+    if buy_signals > sell_signals:
+        signal = "Strong Buy" if confidence > 70 else "Buy"
+    elif sell_signals > buy_signals:
+        signal = "Strong Sell" if confidence > 70 else "Sell"
+    else:
+        signal = "Neutral"
+    return signal, confidence
+
+def suggest_targets(price, signal, pair):
+    if not price:
+        return None, None
+    diff = 0.002 if "JPY" not in pair else 0.2
+    if "buy" in signal.lower():
+        return round(price + diff, 5), round(price - diff, 5)
+    elif "sell" in signal.lower():
+        return round(price - diff, 5), round(price + diff, 5)
+    else:
+        return price, price
+
+# -----------------------------
+# MAIN FUNCTION
+# -----------------------------
+def main():
+    print("==============================")
+    print("📊 MULTI-SOURCE FOREX SIGNALS")
+    print("==============================")
+    print(f"Pair: {SELECTED_PAIR}")
+    print("Fetching data...\n")
+
+    price = get_price(SELECTED_PAIR)
+
+    signals = {
+        "TradingView": get_tradingview_signal(SELECTED_PAIR),
+        "Investing": get_investing_signal(SELECTED_PAIR),
+        "FXStreet": get_fxstreet_signal(SELECTED_PAIR),
+        "CurrencyHeatwave": get_currencyheatwave_signal(),
+        "DailyFX": get_dailyfx_signal(),
+        "MarketWatch": get_marketwatch_signal()
+    }
+
+    for source, signal in signals.items():
+        print(f"{source:20}: {signal}")
+
+    consensus_signal, confidence = consensus(*signals.values())
+    tp, sl = suggest_targets(price, consensus_signal, SELECTED_PAIR)
+
+    print("\n🎯 Consensus:")
+    print(f"   Signal: {consensus_signal}")
+    print(f"   Confidence: {confidence}%")
+
+    print("\n💡 Suggested Trade:")
+    print(f"   Direction: {consensus_signal.split()[-1].upper()}")
+    print(f"   Take Profit: {tp}")
+    print(f"   Stop Loss: {sl}")
+
+    print(f"\n🕒 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("==============================")
+    print("📈 Created by Meek FX")
+    print("📞 0794540823")
+    print("📧 mugunapontian99@gmail.com")
+    print("==============================")
+
+if __name__ == "__main__":
+    main()
